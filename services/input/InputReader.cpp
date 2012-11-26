@@ -39,6 +39,7 @@
 #include "InputReader.h"
 
 #include <cutils/log.h>
+#include <cutils/properties.h>
 #include <ui/Keyboard.h>
 #include <ui/VirtualKeyMap.h>
 
@@ -2286,8 +2287,16 @@ void CursorInputMapper::sync(nsecs_t when) {
     // the device in your pocket.
     // TODO: Use the input device configuration to control this behavior more finely.
     uint32_t policyFlags = 0;
-    if ((buttonsPressed || moved || scrolled) && getDevice()->isExternal()) {
-        policyFlags |= POLICY_FLAG_WAKE_DROPPED;
+    if ((buttonsPressed || moved || scrolled)) {
+        char prop_value[PROPERTY_VALUE_MAX];
+        property_get("persist.sys.tbwake", prop_value, "0");
+        if ((bool)atoi(prop_value)) {
+                policyFlags |= POLICY_FLAG_WAKE_DROPPED;
+        } else {
+            if (getDevice()->isExternal()) {
+                policyFlags |= POLICY_FLAG_WAKE_DROPPED;
+            }
+        }
     }
 
     // Synthesize key down from buttons if needed.
